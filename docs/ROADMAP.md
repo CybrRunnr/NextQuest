@@ -10,13 +10,15 @@ Project skeleton: Next.js 16 on Cloudflare Workers (OpenNext), full Drizzle
 schema + initial migration, Better Auth wiring, metadata provider interface,
 theme system (dark/light), route + server-action stubs, docs.
 
-## Phase 1 — Auth & membership
+## Phase 1 — Auth & membership ✅ (done)
 
 - Google sign-in via Better Auth (`authClient.signIn.social`)
-- Middleware: signed-out → `/sign-in`; signed-in but `status != approved` →
+- Server-side gate (`requireApprovedUser` in the `(app)` layout — no
+  middleware): signed-out → `/sign-in`; signed-in but `status != approved` →
   `/pending-approval`
-- `/admin`: list pending members, approve/reject, grant/revoke admin
-- Seed the first admin (SQL one-liner or env-var allowlist on first sign-in)
+- `/admin`: list pending members, approve/reject/revoke, grant/revoke admin
+- First-admin bootstrap: `ADMIN_EMAILS` env var — listed emails arrive as
+  approved admins on first sign-in
 
 ## Phase 2 — Backlog core
 

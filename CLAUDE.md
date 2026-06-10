@@ -43,7 +43,8 @@ Two files, two runtimes — keep `DATABASE_URL` in sync between them:
 
 - **`.dev.vars`** (from `.dev.vars.example`) — Workers runtime for
   `dev`/`preview`: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS` (first-admin
+  bootstrap: comma-separated emails that arrive approved + admin)
 - **`.env`** (from `.env.example`) — Node-side tooling only (drizzle-kit):
   `DATABASE_URL`
 
@@ -53,12 +54,15 @@ Production secrets: `wrangler secret put <NAME>`. Never commit either file.
 
 ```
 src/
-├── app/                 # routes: / (dashboard), /backlog, /vote, /events,
-│   │                    #   /admin, (auth)/sign-in, (auth)/pending-approval
+├── app/
+│   ├── (app)/           # members-only: / (dashboard), /backlog, /vote,
+│   │   │                #   /events, /admin — layout calls requireApprovedUser
+│   │   └── layout.tsx   #   and is force-dynamic (session + DB per request)
+│   ├── (auth)/          # public: sign-in, pending-approval
 │   └── api/auth/[...all]/  # Better Auth handler
 ├── components/
 │   ├── ui/              # shadcn/ui-style primitives (hand-vendored, see note)
-│   └── *.tsx            # theme-provider, theme-toggle, site-nav
+│   └── *.tsx            # theme-provider, theme-toggle, site-nav (user menu)
 ├── db/
 │   ├── index.ts         # getDb() — per-request Neon HTTP + Drizzle client
 │   └── schema/          # domain-split: auth, games, votes, events, settings
@@ -67,8 +71,16 @@ src/
 │   ├── auth-client.ts   # Better Auth React client
 │   ├── points.ts        # pure points-formula functions
 │   └── metadata/        # pluggable game-metadata providers (steam, hltb, manual)
-└── server/              # server actions per domain (games, votes, events)
+└── server/              # server actions + helpers per domain
+    ├── session.ts       # getSessionUser / requireApprovedUser / requireAdmin
+    ├── members.ts       # admin member management
+    └── games|votes|events.ts
 ```
+
+**Auth gating:** there is no middleware/proxy file. Protection is server-side:
+the `(app)` layout gates pages, and every server action re-checks via
+`requireApprovedUser()`/`requireAdmin()` (`src/server/session.ts`). New
+protected routes go inside `(app)`; new actions must call a gate first.
 
 ## Conventions & invariants
 

@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getSessionUser } from "@/server/session";
+
+import { GoogleSignInButton } from "./google-sign-in-button";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-// TODO(Phase 1): wire to authClient.signIn.social({ provider: "google" })
-// and redirect approved members to the dashboard, pending ones to
-// /pending-approval.
-export default function SignInPage() {
+export default async function SignInPage() {
+	const user = await getSessionUser();
+	if (user) redirect(user.status === "approved" ? "/" : "/pending-approval");
+
 	return (
 		<div className="mx-auto flex max-w-sm flex-col gap-6 pt-16">
 			<Card>
@@ -19,9 +22,7 @@ export default function SignInPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<Button className="w-full" disabled>
-						Continue with Google (Phase 1)
-					</Button>
+					<GoogleSignInButton />
 				</CardContent>
 			</Card>
 		</div>

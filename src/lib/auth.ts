@@ -9,6 +9,7 @@ type AuthEnv = {
 	BETTER_AUTH_URL?: string;
 	GOOGLE_CLIENT_ID?: string;
 	GOOGLE_CLIENT_SECRET?: string;
+	ADMIN_EMAILS?: string;
 };
 
 // Build the auth instance per request: secrets live on the Cloudflare env
@@ -18,8 +19,18 @@ type AuthEnv = {
 // and reconcile rather than hand-drifting.
 export function getAuth() {
 	const { env } = getCloudflareContext();
-	const { BETTER_AUTH_SECRET, BETTER_AUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } =
-		env as AuthEnv;
+	const {
+		BETTER_AUTH_SECRET,
+		BETTER_AUTH_URL,
+		GOOGLE_CLIENT_ID,
+		GOOGLE_CLIENT_SECRET,
+		ADMIN_EMAILS,
+	} = env as AuthEnv;
+
+	const adminEmails = (ADMIN_EMAILS ?? "")
+		.split(",")
+		.map((email) => email.trim().toLowerCase())
+		.filter(Boolean);
 
 	return betterAuth({
 		database: drizzleAdapter(getDb(), {
@@ -50,6 +61,21 @@ export function getAuth() {
 					type: "string",
 					defaultValue: "pending",
 					input: false,
+				},
+			},
+		},
+		databaseHooks: {
+			user: {
+				create: {
+					// First-admin bootstrap: emails listed in ADMIN_EMAILS skip
+					// the approval queue and arrive as approved admins.
+					before: async (user) => {
+						if (adminEmails.includes(user.email.toLowerCase())) {
+							return {
+								data: { ...user, role: "admin", status: "approved" },
+							};
+						}
+					},
 				},
 			},
 		},

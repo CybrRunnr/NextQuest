@@ -15,3 +15,7 @@ BETTER_AUTH_URL=http://localhost:3000
 # Google OAuth credentials (https://console.cloud.google.com/apis/credentials)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+
+# Comma-separated emails that become approved admins on first sign-in
+# (first-admin bootstrap — everyone else lands in the approval queue)
+ADMIN_EMAILS=

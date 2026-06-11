@@ -8,6 +8,13 @@
       "when": 1781131538770,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781146802014,
+      "tag": "0001_rsvp_nullable",
+      "breakpoints": true
     }
   ]
 }

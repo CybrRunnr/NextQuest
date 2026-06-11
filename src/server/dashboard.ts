@@ -39,13 +39,21 @@ export type DashboardData = {
 		points: number | null;
 		startedAt: Date | null;
 	}[];
+	upcomingEvents: {
+		id: string;
+		title: string;
+		scheduledAt: Date;
+		location: string | null;
+		gameTitle: string | null;
+		yesCount: number;
+	}[];
 };
 
 export async function getDashboardData(): Promise<DashboardData> {
 	const db = getDb();
 	const effectivePoints = sql<number | null>`coalesce(${schema.games.pointsOverride}, ${schema.games.points})`;
 
-	const [inScopeGames, completions, playingRows] = await Promise.all([
+	const [inScopeGames, completions, playingRows, upcomingEvents] = await Promise.all([
 		// The accepted body of work: proposed games aren't commitments yet,
 		// and abandoned/rejected ones left it.
 		db
@@ -80,6 +88,24 @@ export async function getDashboardData(): Promise<DashboardData> {
 			.from(schema.games)
 			.leftJoin(schema.gameMetadata, eq(schema.games.id, schema.gameMetadata.gameId))
 			.where(eq(schema.games.status, "playing")),
+		db
+			.select({
+				id: schema.events.id,
+				title: schema.events.title,
+				scheduledAt: schema.events.scheduledAt,
+				location: schema.events.location,
+				gameTitle: schema.games.title,
+				yesCount: sql<number>`(
+					select count(*)::int from ${schema.eventAttendance}
+					where ${schema.eventAttendance.eventId} = ${schema.events.id}
+					and ${schema.eventAttendance.rsvp} = 'yes'
+				)`,
+			})
+			.from(schema.events)
+			.leftJoin(schema.games, eq(schema.events.gameId, schema.games.id))
+			.where(and(eq(schema.events.status, "scheduled"), sql`${schema.events.scheduledAt} > now()`))
+			.orderBy(schema.events.scheduledAt)
+			.limit(3),
 	]);
 
 	const totalPoints = inScopeGames.reduce((sum, game) => sum + (game.points ?? 0), 0);
@@ -127,5 +153,6 @@ export async function getDashboardData(): Promise<DashboardData> {
 			startedAt: row.startedAt,
 			art: row.headerUrl ?? row.coverUrl,
 		})),
+		upcomingEvents,
 	};
 }

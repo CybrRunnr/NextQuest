@@ -1,8 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { CheckCircle2Icon, LibraryIcon, StarIcon, TrendingUpIcon } from "lucide-react";
+import {
+	CalendarIcon,
+	CheckCircle2Icon,
+	LibraryIcon,
+	StarIcon,
+	TrendingUpIcon,
+	UsersIcon,
+} from "lucide-react";
 
+import { LocalTime } from "@/components/local-time";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDashboardData } from "@/server/dashboard";
@@ -35,7 +43,7 @@ function StatCard({
 }
 
 export default async function DashboardPage() {
-	const { totals, burnRate, playing } = await getDashboardData();
+	const { totals, burnRate, playing, upcomingEvents } = await getDashboardData();
 	const projection = burnRate.projectedCompletionDate
 		? { label: format(new Date(burnRate.projectedCompletionDate), "MMM d") }
 		: null;
@@ -133,6 +141,37 @@ export default async function DashboardPage() {
 					)}
 				</CardContent>
 			</Card>
+
+			{upcomingEvents.length > 0 && (
+				<section className="flex flex-col gap-3">
+					<h2 className="text-sm font-medium tracking-wide uppercase">Next sessions</h2>
+					<div className="grid gap-4 sm:grid-cols-3">
+						{upcomingEvents.map((event) => (
+							<Link key={event.id} href="/events">
+								<Card className="hover:border-primary/50 h-full py-4 transition-colors">
+									<CardContent className="flex flex-col gap-1 px-5">
+										<p className="flex items-center gap-1.5 truncate text-sm font-semibold">
+											<CalendarIcon className="text-primary size-3.5 shrink-0" />
+											{event.title}
+										</p>
+										<p className="text-muted-foreground text-xs">
+											<LocalTime date={event.scheduledAt} withWeekday />
+											{event.location && ` · ${event.location}`}
+										</p>
+										<p className="text-muted-foreground flex items-center gap-1 text-xs">
+											{event.gameTitle && <span className="truncate">{event.gameTitle}</span>}
+											<span className="ml-auto flex shrink-0 items-center gap-1">
+												<UsersIcon className="size-3" />
+												{event.yesCount} in
+											</span>
+										</p>
+									</CardContent>
+								</Card>
+							</Link>
+						))}
+					</div>
+				</section>
+			)}
 
 			{playing.length > 0 && (
 				<section className="flex flex-col gap-3">

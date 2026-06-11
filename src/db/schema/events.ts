@@ -44,7 +44,9 @@ export const eventAttendance = pgTable(
 		userId: text("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
-		rsvp: rsvpStatus("rsvp").notNull(),
+		// Null when the row exists only to record attendance for someone who
+		// never RSVP'd but showed up anyway.
+		rsvp: rsvpStatus("rsvp"),
 		// Recorded after the session; null until then.
 		attended: boolean("attended"),
 		respondedAt: timestamp("responded_at", { withTimezone: true }).notNull().defaultNow(),

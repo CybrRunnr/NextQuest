@@ -59,11 +59,19 @@ theme system (dark/light), route + server-action stubs, docs.
   >3 years out
 - "Now playing" spotlight cards with art and started-ago
 
-## Phase 5 — Events
+## Phase 5 — Events ✅ (done)
 
-- Event CRUD (title, optional game link, time, duration, location, notes)
-- RSVP (yes/no/maybe) + after-the-fact attendance recording
-- Upcoming events on the dashboard; session notes/recaps
+- Create-session form (title, optional game from playing/backlog, when —
+  converted to ISO in the browser so timezones survive, duration, location,
+  notes); creator auto-RSVPs yes
+- RSVP yes/maybe/no with public name lists (attendance isn't anonymous —
+  only votes are); RSVPs close once the event is wrapped up
+- "Needs wrap-up" flow for past scheduled events: member checklist
+  (pre-checked from RSVPs), recap notes, completes the event; or "it never
+  happened" → cancelled. `rsvp` made nullable (migration 0001) so
+  attendance-only rows exist for walk-ins
+- Dashboard "Next sessions" cards (next 3, with yes-counts); times render
+  in the viewer's browser timezone via `LocalTime`
 
 ## Phase 6 — GAC (Gamer Availability Checker)
 

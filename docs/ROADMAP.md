@@ -20,16 +20,20 @@ theme system (dark/light), route + server-action stubs, docs.
 - First-admin bootstrap: `ADMIN_EMAILS` env var — listed emails arrive as
   approved admins on first sign-in
 
-## Phase 2 — Backlog core
+## Phase 2 — Backlog core ✅ (done)
 
-- Game proposal form (title + optional Steam link + pitch)
-- Metadata pipeline: Steam storesearch/appdetails + HLTB lookup, manual
+- Game proposal form (title + optional Steam link/app id + pitch) with
+  metadata auto-fetch on submit
+- Metadata pipeline: Steam storesearch/appdetails/appreviews + HLTB lookup
+  (endpoint+key discovered from their JS bundle at request time), manual
   fallback when either fails (`src/lib/metadata/`)
-- Points assignment: length auto-filled from HLTB, difficulty set by the
-  group, computed points shown with manual override
-- Status lifecycle UI (`proposed → backlog → playing → completed`, plus
-  `abandoned`/`rejected`) — all transitions via `transitionGameStatus`
-- Backlog list with cover art, points, status badges
+- Points: length auto-filled from HLTB Main+Extra, difficulty set via "Edit
+  scoring", stored points recomputed on edit, manual override supported
+- Status lifecycle UI — all transitions via `transitionGameStatus`, which
+  validates moves, stamps started/completed, appends history, and clears
+  votes when a game leaves the backlog
+- Backlog list grouped by status with art, points/needs-scoring badges,
+  genres, review %, proposer, and pitch
 
 ## Phase 3 — Voting
 

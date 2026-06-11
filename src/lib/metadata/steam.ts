@@ -1,23 +1,111 @@
 import type { GameMetadataProvider, GameSearchResult, NormalizedGameMetadata } from "./types";
 
 // Steam storefront API (unauthenticated):
-//   search:  https://store.steampowered.com/api/storesearch/?term=<q>&cc=us&l=en
-//   details: https://store.steampowered.com/api/appdetails?appids=<id>&cc=us&l=en
-// Returns header art, description, genres, release date, metacritic. Review
-// score comes from https://store.steampowered.com/appreviews/<id>?json=1.
-// No API key needed; be polite (cache results in game_metadata, don't refetch
-// on every page view).
-//
-// TODO(Phase 2): implement search + fetchByExternalId with fetch(); map the
-// appdetails payload into NormalizedGameMetadata and stash the raw response.
+//   search:  /api/storesearch/?term=<q>&cc=us&l=en
+//   details: /api/appdetails?appids=<id>&cc=us&l=en
+//   reviews: /appreviews/<id>?json=1
+// No API key needed; results are cached in game_metadata — never refetch per
+// page view.
+
+const STORE = "https://store.steampowered.com";
+const FETCH_TIMEOUT_MS = 8_000;
+
+async function fetchJson<T>(url: string): Promise<T> {
+	const res = await fetch(url, {
+		headers: { Accept: "application/json" },
+		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+	});
+	if (!res.ok) {
+		throw new Error(`Steam request failed: ${res.status} ${url}`);
+	}
+	return res.json() as Promise<T>;
+}
+
+type StoreSearchResponse = {
+	items?: { id: number; name: string; tiny_image?: string }[];
+};
+
+type AppDetailsData = {
+	name?: string;
+	short_description?: string;
+	header_image?: string;
+	genres?: { description: string }[];
+	release_date?: { coming_soon?: boolean; date?: string };
+	metacritic?: { score?: number };
+};
+
+type AppDetailsResponse = Record<string, { success: boolean; data?: AppDetailsData }>;
+
+type AppReviewsResponse = {
+	query_summary?: { total_positive?: number; total_reviews?: number };
+};
+
+function parseReleaseDate(raw?: string): string | undefined {
+	if (!raw) return undefined;
+	const parsed = new Date(raw);
+	return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString().slice(0, 10);
+}
+
 export const steamProvider: GameMetadataProvider = {
 	id: "steam",
 
-	async search(_query: string): Promise<GameSearchResult[]> {
-		throw new Error("steamProvider.search not implemented (Phase 2)");
+	async search(query: string): Promise<GameSearchResult[]> {
+		const data = await fetchJson<StoreSearchResponse>(
+			`${STORE}/api/storesearch/?term=${encodeURIComponent(query)}&cc=us&l=en`
+		);
+		return (data.items ?? []).map((item) => ({
+			providerId: "steam",
+			externalId: String(item.id),
+			title: item.name,
+			coverUrl: item.tiny_image,
+		}));
 	},
 
-	async fetchByExternalId(_appId: string): Promise<NormalizedGameMetadata> {
-		throw new Error("steamProvider.fetchByExternalId not implemented (Phase 2)");
+	async fetchByExternalId(appId: string): Promise<NormalizedGameMetadata> {
+		const details = await fetchJson<AppDetailsResponse>(
+			`${STORE}/api/appdetails?appids=${appId}&cc=us&l=en`
+		);
+		const entry = details[appId];
+		if (!entry?.success || !entry.data) {
+			throw new Error(`Steam appdetails returned no data for app ${appId}`);
+		}
+		const data = entry.data;
+
+		// Review score is a separate endpoint; its failure shouldn't sink the
+		// whole fetch.
+		let steamReviewScore: number | undefined;
+		let steamReviewCount: number | undefined;
+		let reviewsRaw: unknown;
+		try {
+			const reviews = await fetchJson<AppReviewsResponse>(
+				`${STORE}/appreviews/${appId}?json=1&language=all&purchase_type=all&num_per_page=0`
+			);
+			const summary = reviews.query_summary;
+			if (summary?.total_reviews) {
+				steamReviewCount = summary.total_reviews;
+				steamReviewScore = Math.round(
+					((summary.total_positive ?? 0) / summary.total_reviews) * 100
+				);
+			}
+			reviewsRaw = reviews;
+		} catch {
+			// degrade silently — score stays unset
+		}
+
+		return {
+			title: data.name,
+			steamAppId: Number(appId),
+			headerUrl: data.header_image,
+			// Portrait library art; not guaranteed to exist for older titles —
+			// the UI falls back to headerUrl.
+			coverUrl: `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`,
+			description: data.short_description,
+			genres: data.genres?.map((genre) => genre.description),
+			releaseDate: parseReleaseDate(data.release_date?.date),
+			metacriticScore: data.metacritic?.score,
+			steamReviewScore,
+			steamReviewCount,
+			raw: { appdetails: data, appreviews: reviewsRaw },
+		};
 	},
 };

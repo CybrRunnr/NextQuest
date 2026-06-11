@@ -1,32 +1,34 @@
+import Link from "next/link";
 import { CalendarIcon, LibraryIcon, TrendingUpIcon, VoteIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const upcoming = [
+const modules = [
 	{
 		icon: LibraryIcon,
 		title: "Backlog",
 		description: "Group backlog with points, cover art, and completion tracking.",
-		phase: "Phase 2",
+		badge: "Live",
+		href: "/backlog",
 	},
 	{
 		icon: VoteIcon,
 		title: "Voting",
 		description: "Anonymous budget-allocation voting to prioritize what's next.",
-		phase: "Phase 3",
+		badge: "Phase 3",
 	},
 	{
 		icon: TrendingUpIcon,
 		title: "Burn rate",
 		description: "Points completed over time with a projected finish date.",
-		phase: "Phase 4",
+		badge: "Phase 4",
 	},
 	{
 		icon: CalendarIcon,
 		title: "Events",
 		description: "Session scheduling, RSVPs, and attendance tracking.",
-		phase: "Phase 5",
+		badge: "Phase 5",
 	},
 ];
 
@@ -41,20 +43,35 @@ export default function DashboardPage() {
 				</p>
 			</div>
 			<div className="grid gap-4 sm:grid-cols-2">
-				{upcoming.map((item) => (
-					<Card key={item.title}>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<item.icon className="size-4 text-primary" />
-								{item.title}
-								<Badge variant="secondary" className="ml-auto">
-									{item.phase}
-								</Badge>
-							</CardTitle>
-							<CardDescription>{item.description}</CardDescription>
-						</CardHeader>
-					</Card>
-				))}
+				{modules.map((item) => {
+					const card = (
+						<Card
+							key={item.title}
+							className={item.href ? "hover:border-primary/50 h-full transition-colors" : "h-full"}
+						>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<item.icon className="size-4 text-primary" />
+									{item.title}
+									<Badge
+										variant={item.badge === "Live" ? "default" : "secondary"}
+										className="ml-auto"
+									>
+										{item.badge}
+									</Badge>
+								</CardTitle>
+								<CardDescription>{item.description}</CardDescription>
+							</CardHeader>
+						</Card>
+					);
+					return item.href ? (
+						<Link key={item.title} href={item.href}>
+							{card}
+						</Link>
+					) : (
+						card
+					);
+				})}
 			</div>
 		</div>
 	);

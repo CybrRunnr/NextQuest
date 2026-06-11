@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-	/* config options here */
+	images: {
+		// Steam art CDNs (game_metadata cover/header URLs)
+		remotePatterns: [
+			{ protocol: "https", hostname: "**.steamstatic.com" },
+			{ protocol: "https", hostname: "**.akamaihd.net" },
+		],
+	},
 };
 
 export default nextConfig;

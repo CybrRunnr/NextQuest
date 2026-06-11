@@ -10,20 +10,21 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
+import { availabilityPolls } from "./availability";
 import { games } from "./games";
 
 export const eventStatus = pgEnum("event_status", ["scheduled", "completed", "cancelled"]);
 
 export const rsvpStatus = pgEnum("rsvp_status", ["yes", "no", "maybe"]);
 
-// Future GAC (Gamer Availability Checker) module adds availability_polls /
-// availability_options / availability_responses tables plus a nullable
-// `availability_poll_id` column here — additive only, see
-// docs/ARCHITECTURE.md.
 export const events = pgTable("events", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	title: text("title").notNull(),
 	gameId: uuid("game_id").references(() => games.id, { onDelete: "set null" }),
+	// Set when the event was created from a GAC poll's winning slot.
+	availabilityPollId: uuid("availability_poll_id").references(() => availabilityPolls.id, {
+		onDelete: "set null",
+	}),
 	scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
 	durationMinutes: integer("duration_minutes"),
 	// Free-form: a Discord channel, a URL, or "the couch".

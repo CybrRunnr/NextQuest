@@ -79,23 +79,20 @@ requesting member's own ballot.
 budget (10), per-game vote cap (4), difficulty multipliers (jsonb) — the
 tunables, changeable without a deploy.
 
-## Future: GAC (Gamer Availability Checker) — Phase 6
+### GAC (`availability.ts`) — built in Phase 6
 
-Designed now so it lands as a purely additive migration:
+Landed as the purely additive migration designed here (0002):
 
-```
-availability_polls      id uuid PK, title, created_by → user.id,
-                        closes_at timestamptz, status (open|closed)
-availability_options    id uuid PK, poll_id → availability_polls.id (cascade),
-                        starts_at, ends_at timestamptz
-availability_responses  option_id → availability_options.id (cascade),
-                        user_id → user.id (cascade),
-                        response enum (yes|no|if_need_be),
-                        PK (option_id, user_id)
-```
+- **`availability_polls`** — title, creator, status (`open`/`closed`),
+  optional `closes_at` (unused by the UI so far).
+- **`availability_options`** — time slots (`starts_at`/`ends_at`), cascade
+  on poll delete.
+- **`availability_responses`** — PK `(option_id, user_id)`, response enum
+  `yes`/`no`/`if_need_be`. Public within the group, like RSVPs.
 
-Plus a nullable `events.availability_poll_id` column ("event created from
-the winning slot"). Nothing in the current schema needs to change.
+`events.availability_poll_id` (nullable) marks events created from a poll's
+winning slot; scheduling a slot seeds `event_attendance` from the slot's
+responses (yes→yes, if-need-be→maybe, no→no) and closes the poll.
 
 ## Game metadata pipeline
 

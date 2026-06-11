@@ -73,12 +73,17 @@ theme system (dark/light), route + server-action stubs, docs.
 - Dashboard "Next sessions" cards (next 3, with yes-counts); times render
   in the viewer's browser timezone via `LocalTime`
 
-## Phase 6 — GAC (Gamer Availability Checker)
+## Phase 6 — GAC (Gamer Availability Checker) ✅ (done)
 
 - `availability_polls` / `availability_options` / `availability_responses`
-  tables (designed in docs/ARCHITECTURE.md; additive migration)
-- Poll UI: propose time slots, members mark yes/no/if-need-be
-- "Create event from winning slot"
+  tables + `events.availability_poll_id` (migration 0002 — purely additive,
+  exactly as designed in docs/ARCHITECTURE.md)
+- "Find a time" section on /events: propose slots (shared session length,
+  browser-timezone-correct), members answer Free / If need be / Busy;
+  responses are public, leading slot highlighted (yes×2 + if-need-be)
+- "Schedule this" turns a slot into an event: seeds RSVPs from responses
+  (yes→yes, if-need-be→maybe, no→no) and closes the poll; manual close
+  supported; proposer auto-marked free for their own slots
 
 ## Phase 7 — Polish & extras
 

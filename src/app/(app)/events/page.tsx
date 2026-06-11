@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb, schema } from "@/db";
 import { requireApprovedUser } from "@/server/session";
 
 import { CreateEventForm } from "./create-event-form";
+import { CreatePollForm } from "./create-poll-form";
 import { EventCard, type EventWithDetails } from "./event-card";
+import { PollCard, type PollWithSlots } from "./poll-card";
 
 export const metadata: Metadata = { title: "Events" };
 
@@ -92,6 +94,89 @@ export default async function EventsPage() {
 
 	const { upcoming, needsWrapUp, past } = partitionEvents(events);
 
+	// GAC polls: all open ones plus a few recently closed for context.
+	const pollCreator = schema.user;
+	const pollRows = await db
+		.select({
+			id: schema.availabilityPolls.id,
+			title: schema.availabilityPolls.title,
+			status: schema.availabilityPolls.status,
+			createdAt: schema.availabilityPolls.createdAt,
+			creatorName: pollCreator.name,
+		})
+		.from(schema.availabilityPolls)
+		.leftJoin(pollCreator, eq(schema.availabilityPolls.createdBy, pollCreator.id))
+		.orderBy(asc(schema.availabilityPolls.status), desc(schema.availabilityPolls.createdAt));
+	const visiblePolls = [
+		...pollRows.filter((poll) => poll.status === "open"),
+		...pollRows.filter((poll) => poll.status === "closed").slice(0, 3),
+	];
+
+	const pollIds = visiblePolls.map((poll) => poll.id);
+	const [optionRows, scheduledFromPoll] = await Promise.all([
+		pollIds.length === 0
+			? Promise.resolve([])
+			: db
+					.select({
+						id: schema.availabilityOptions.id,
+						pollId: schema.availabilityOptions.pollId,
+						startsAt: schema.availabilityOptions.startsAt,
+						endsAt: schema.availabilityOptions.endsAt,
+					})
+					.from(schema.availabilityOptions)
+					.where(inArray(schema.availabilityOptions.pollId, pollIds))
+					.orderBy(asc(schema.availabilityOptions.startsAt)),
+		pollIds.length === 0
+			? Promise.resolve([])
+			: db
+					.select({ pollId: schema.events.availabilityPollId })
+					.from(schema.events)
+					.where(
+						inArray(
+							schema.events.availabilityPollId,
+							pollIds
+						)
+					),
+	]);
+
+	const responseRows =
+		optionRows.length === 0
+			? []
+			: await db
+					.select({
+						optionId: schema.availabilityResponses.optionId,
+						userId: schema.availabilityResponses.userId,
+						response: schema.availabilityResponses.response,
+						name: schema.user.name,
+					})
+					.from(schema.availabilityResponses)
+					.innerJoin(schema.user, eq(schema.availabilityResponses.userId, schema.user.id))
+					.where(
+						inArray(
+							schema.availabilityResponses.optionId,
+							optionRows.map((option) => option.id)
+						)
+					);
+
+	const scheduledPollIds = new Set(scheduledFromPoll.map((row) => row.pollId));
+	const polls: PollWithSlots[] = visiblePolls.map((poll) => ({
+		id: poll.id,
+		title: poll.title,
+		status: poll.status,
+		creatorName: poll.creatorName,
+		scheduled: scheduledPollIds.has(poll.id),
+		slots: optionRows
+			.filter((option) => option.pollId === poll.id)
+			.map((option) => ({
+				id: option.id,
+				startsAt: option.startsAt,
+				endsAt: option.endsAt,
+				responses: responseRows
+					.filter((row) => row.optionId === option.id)
+					.map(({ userId, name, response }) => ({ userId, name, response })),
+			})),
+	}));
+
 	return (
 		<div className="flex flex-col gap-8">
 			<div>
@@ -102,6 +187,14 @@ export default async function EventsPage() {
 			</div>
 
 			<CreateEventForm games={candidateGames} />
+
+			<section className="flex flex-col gap-3">
+				<h2 className="text-sm font-medium tracking-wide uppercase">Find a time</h2>
+				{polls.map((poll) => (
+					<PollCard key={poll.id} poll={poll} currentUserId={user.id} />
+				))}
+				<CreatePollForm />
+			</section>
 
 			{needsWrapUp.length > 0 && (
 				<section className="flex flex-col gap-3">

@@ -9,30 +9,35 @@ import { useSyncExternalStore } from "react";
 
 const emptySubscribe = () => () => {};
 
-function formatTime(value: Date, withWeekday: boolean, utc: boolean): string {
-	const text = new Intl.DateTimeFormat(utc ? "en-US" : undefined, {
-		...(withWeekday ? { weekday: "short" } : {}),
-		month: "short",
-		day: "numeric",
+type Variant = "datetime" | "weekday-datetime" | "time";
+
+function formatTime(value: Date, variant: Variant, utc: boolean): string {
+	const options: Intl.DateTimeFormatOptions = {
 		hour: "numeric",
 		minute: "2-digit",
+		...(variant !== "time" ? { month: "short", day: "numeric" } : {}),
+		...(variant === "weekday-datetime" ? { weekday: "short" } : {}),
 		...(utc ? { timeZone: "UTC" } : {}),
-	}).format(value);
+	};
+	const text = new Intl.DateTimeFormat(utc ? "en-US" : undefined, options).format(value);
 	return utc ? `${text} UTC` : text;
 }
 
 export function LocalTime({
 	date,
 	withWeekday = false,
+	timeOnly = false,
 }: {
 	date: Date | string;
 	withWeekday?: boolean;
+	timeOnly?: boolean;
 }) {
 	const value = typeof date === "string" ? new Date(date) : date;
+	const variant: Variant = timeOnly ? "time" : withWeekday ? "weekday-datetime" : "datetime";
 	const text = useSyncExternalStore(
 		emptySubscribe,
-		() => formatTime(value, withWeekday, false),
-		() => formatTime(value, withWeekday, true)
+		() => formatTime(value, variant, false),
+		() => formatTime(value, variant, true)
 	);
 
 	return <time dateTime={value.toISOString()}>{text}</time>;

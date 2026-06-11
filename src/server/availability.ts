@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb, schema } from "@/db";
+import { discordTimestamp, notifyDiscord } from "@/lib/discord";
 import { requireApprovedUser } from "@/server/session";
 
 type AvailabilityResponse = (typeof schema.availabilityResponseValue.enumValues)[number];
@@ -154,6 +155,9 @@ export async function createEventFromSlot(optionId: string): Promise<void> {
 		.set({ status: "closed" })
 		.where(eq(schema.availabilityPolls.id, slot.pollId));
 
+	notifyDiscord(
+		`📅 **${slot.pollTitle}** is happening ${discordTimestamp(slot.startsAt)} — the poll picked its winner`
+	);
 	revalidatePath("/events");
 	revalidatePath("/");
 }

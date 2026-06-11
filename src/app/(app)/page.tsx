@@ -2,20 +2,68 @@ import Image from "next/image";
 import Link from "next/link";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import {
+	ActivityIcon,
 	CalendarIcon,
+	CalendarPlusIcon,
 	CheckCircle2Icon,
+	FlagIcon,
 	LibraryIcon,
+	PlayIcon,
 	StarIcon,
 	TrendingUpIcon,
+	TrophyIcon,
 	UsersIcon,
+	XCircleIcon,
 } from "lucide-react";
 
 import { LocalTime } from "@/components/local-time";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDashboardData } from "@/server/dashboard";
+import { getDashboardData, type ActivityItem } from "@/server/dashboard";
 
 import { BurnRateChart } from "./burn-rate-chart";
+
+const STATUS_VERB: Record<string, { icon: typeof FlagIcon; before: string; after?: string }> = {
+	proposed: { icon: FlagIcon, before: "proposed" },
+	backlog: { icon: LibraryIcon, before: "moved", after: "to the backlog" },
+	playing: { icon: PlayIcon, before: "started" },
+	completed: { icon: TrophyIcon, before: "finished" },
+	abandoned: { icon: XCircleIcon, before: "abandoned" },
+	rejected: { icon: XCircleIcon, before: "rejected" },
+};
+
+function ActivityRow({ item }: { item: ActivityItem }) {
+	if (item.kind === "event") {
+		return (
+			<li className="flex items-start gap-2.5 text-sm">
+				<CalendarPlusIcon className="text-primary mt-0.5 size-4 shrink-0" />
+				<span className="min-w-0">
+					<span className="font-medium">{item.actor ?? "Someone"}</span> scheduled{" "}
+					<span className="font-medium">{item.eventTitle}</span> for{" "}
+					<LocalTime date={item.scheduledAt} withWeekday />
+					<span className="text-muted-foreground block text-xs">
+						{formatDistanceToNowStrict(item.at, { addSuffix: true })}
+					</span>
+				</span>
+			</li>
+		);
+	}
+	const verb = STATUS_VERB[item.toStatus] ?? STATUS_VERB.proposed;
+	const Icon = verb.icon;
+	return (
+		<li className="flex items-start gap-2.5 text-sm">
+			<Icon className="text-primary mt-0.5 size-4 shrink-0" />
+			<span className="min-w-0">
+				<span className="font-medium">{item.actor ?? "Someone"}</span> {verb.before}{" "}
+				<span className="font-medium">{item.gameTitle}</span>
+				{verb.after && ` ${verb.after}`}
+				<span className="text-muted-foreground block text-xs">
+					{formatDistanceToNowStrict(item.at, { addSuffix: true })}
+				</span>
+			</span>
+		</li>
+	);
+}
 
 function StatCard({
 	icon: Icon,
@@ -43,7 +91,8 @@ function StatCard({
 }
 
 export default async function DashboardPage() {
-	const { totals, burnRate, playing, upcomingEvents } = await getDashboardData();
+	const { totals, burnRate, playing, upcomingEvents, activity, memberStats, completedEventCount } =
+		await getDashboardData();
 	const projection = burnRate.projectedCompletionDate
 		? { label: format(new Date(burnRate.projectedCompletionDate), "MMM d") }
 		: null;
@@ -215,6 +264,58 @@ export default async function DashboardPage() {
 					</div>
 				</section>
 			)}
+
+			<div className="grid items-start gap-4 lg:grid-cols-2">
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<ActivityIcon className="size-4" />
+							Recent activity
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						{activity.length === 0 ? (
+							<p className="text-muted-foreground text-sm">Nothing has happened yet.</p>
+						) : (
+							<ul className="flex flex-col gap-3">
+								{activity.map((item, index) => (
+									<ActivityRow key={index} item={item} />
+								))}
+							</ul>
+						)}
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<UsersIcon className="size-4" />
+							Members
+						</CardTitle>
+						<CardDescription>
+							Proposals made and sessions attended
+							{completedEventCount > 0 && ` (of ${completedEventCount} held)`}.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<ul className="divide-y">
+							{memberStats.map((member) => (
+								<li key={member.id} className="flex items-center gap-3 py-2 text-sm">
+									<span className="min-w-0 flex-1 truncate font-medium">{member.name}</span>
+									<span className="text-muted-foreground text-xs">
+										{member.proposals} proposed
+									</span>
+									<span className="text-muted-foreground text-xs">
+										{completedEventCount > 0
+											? `${member.sessionsAttended}/${completedEventCount} sessions`
+											: "no sessions yet"}
+									</span>
+								</li>
+							))}
+						</ul>
+					</CardContent>
+				</Card>
+			</div>
 		</div>
 	);
 }

@@ -47,7 +47,31 @@ export type DashboardData = {
 		gameTitle: string | null;
 		yesCount: number;
 	}[];
+	activity: ActivityItem[];
+	memberStats: {
+		id: string;
+		name: string;
+		proposals: number;
+		sessionsAttended: number;
+	}[];
+	completedEventCount: number;
 };
+
+export type ActivityItem =
+	| {
+			kind: "status";
+			at: Date;
+			actor: string | null;
+			gameTitle: string;
+			toStatus: (typeof schema.gameStatus.enumValues)[number];
+	  }
+	| {
+			kind: "event";
+			at: Date;
+			actor: string | null;
+			eventTitle: string;
+			scheduledAt: Date;
+	  };
 
 export async function getDashboardData(): Promise<DashboardData> {
 	const db = getDb();
@@ -108,6 +132,62 @@ export async function getDashboardData(): Promise<DashboardData> {
 			.limit(3),
 	]);
 
+	const [statusActivity, eventActivity, memberStats, completedEvents] = await Promise.all([
+		db
+			.select({
+				at: schema.gameStatusHistory.changedAt,
+				toStatus: schema.gameStatusHistory.toStatus,
+				gameTitle: schema.games.title,
+				actor: schema.user.name,
+			})
+			.from(schema.gameStatusHistory)
+			.innerJoin(schema.games, eq(schema.gameStatusHistory.gameId, schema.games.id))
+			.leftJoin(schema.user, eq(schema.gameStatusHistory.changedBy, schema.user.id))
+			.orderBy(sql`${schema.gameStatusHistory.changedAt} desc`)
+			.limit(10),
+		db
+			.select({
+				at: schema.events.createdAt,
+				eventTitle: schema.events.title,
+				scheduledAt: schema.events.scheduledAt,
+				actor: schema.user.name,
+			})
+			.from(schema.events)
+			.leftJoin(schema.user, eq(schema.events.createdBy, schema.user.id))
+			.orderBy(sql`${schema.events.createdAt} desc`)
+			.limit(5),
+		db
+			.select({
+				id: schema.user.id,
+				name: schema.user.name,
+				proposals: sql<number>`(
+					select count(*)::int from ${schema.games}
+					where ${schema.games.proposedBy} = ${schema.user.id}
+				)`,
+				sessionsAttended: sql<number>`(
+					select count(*)::int from ${schema.eventAttendance}
+					join ${schema.events} on ${schema.events.id} = ${schema.eventAttendance.eventId}
+					where ${schema.eventAttendance.userId} = ${schema.user.id}
+					and ${schema.eventAttendance.attended} = true
+					and ${schema.events.status} = 'completed'
+				)`,
+			})
+			.from(schema.user)
+			.where(eq(schema.user.status, "approved"))
+			.orderBy(schema.user.name),
+		db
+			.select({ count: sql<number>`count(*)::int` })
+			.from(schema.events)
+			.where(eq(schema.events.status, "completed")),
+	]);
+
+	const activity: ActivityItem[] = [
+		...statusActivity.map((row) => ({ kind: "status" as const, ...row })),
+		...eventActivity.map((row) => ({ kind: "event" as const, ...row })),
+	]
+		.sort((a, b) => b.at.getTime() - a.at.getTime())
+		.slice(0, 12);
+
 	const totalPoints = inScopeGames.reduce((sum, game) => sum + (game.points ?? 0), 0);
 	const completedPoints = inScopeGames
 		.filter((game) => game.status === "completed")
@@ -154,5 +234,8 @@ export async function getDashboardData(): Promise<DashboardData> {
 			art: row.headerUrl ?? row.coverUrl,
 		})),
 		upcomingEvents,
+		activity,
+		memberStats,
+		completedEventCount: completedEvents[0]?.count ?? 0,
 	};
 }

@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb, schema } from "@/db";
+import { discordTimestamp, notifyDiscord } from "@/lib/discord";
 import { requireApprovedUser } from "@/server/session";
 
 type Rsvp = (typeof schema.rsvpStatus.enumValues)[number];
@@ -53,6 +54,9 @@ export async function createEvent(formData: FormData): Promise<void> {
 		rsvp: "yes",
 	});
 
+	notifyDiscord(
+		`📅 ${user.name} scheduled **${input.title}** for ${discordTimestamp(input.scheduledAt)}${input.location ? ` (${input.location})` : ""}`
+	);
 	revalidatePath("/events");
 	revalidatePath("/");
 }

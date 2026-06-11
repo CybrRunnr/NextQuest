@@ -85,11 +85,18 @@ theme system (dark/light), route + server-action stubs, docs.
   (yes→yes, if-need-be→maybe, no→no) and closes the poll; manual close
   supported; proposer auto-marked free for their own slots
 
-## Phase 7 — Polish & extras
+## Phase 7 — Polish ✅ (done)
 
-- Activity feed (from `game_status_history` + events)
-- Discord webhook notifications (new proposal, vote milestones, event
-  reminders)
-- Per-member stats (attendance %, games finished, points contributed)
+- Activity feed on the dashboard (status transitions from
+  `game_status_history` + newly scheduled events, merged, latest 12)
+- Member stats card: proposals made + sessions attended (of total held)
+- Discord webhook notifications via optional `DISCORD_WEBHOOK_URL`
+  (`src/lib/discord.ts`, fire-and-forget on waitUntil): new proposal,
+  started/finished a game, session scheduled (manual or from a GAC poll)
+
+## Future ideas (unscheduled)
+
 - Scheduled metadata refresh (Workers cron) for review scores
 - Game tags / filtering
+- Vote-milestone notifications and event reminders
+- Settings UI for `app_settings` (vote budget, formula multipliers)

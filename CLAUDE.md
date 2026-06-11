@@ -44,7 +44,8 @@ Two files, two runtimes — keep `DATABASE_URL` in sync between them:
 - **`.dev.vars`** (from `.dev.vars.example`) — Workers runtime for
   `dev`/`preview`: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS` (first-admin
-  bootstrap: comma-separated emails that arrive approved + admin)
+  bootstrap: comma-separated emails that arrive approved + admin),
+  `DISCORD_WEBHOOK_URL` (optional — notifications no-op without it)
 - **`.env`** (from `.env.example`) — Node-side tooling only (drizzle-kit):
   `DATABASE_URL`
 

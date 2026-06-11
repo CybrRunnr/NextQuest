@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb, schema } from "@/db";
+import { notifyDiscord } from "@/lib/discord";
 import { fetchGameMetadata } from "@/lib/metadata";
 import { computePoints, type Difficulty } from "@/lib/points";
 import { requireApprovedUser } from "@/server/session";
@@ -90,6 +91,9 @@ export async function proposeGame(formData: FormData): Promise<void> {
 		changedBy: user.id,
 	});
 
+	notifyDiscord(
+		`🎮 ${user.name} proposed **${metadata.title ?? input.title}**${input.pitch ? ` — “${input.pitch}”` : ""}`
+	);
 	revalidatePath("/backlog");
 }
 
@@ -101,7 +105,11 @@ export async function transitionGameStatus(gameId: string, toStatus: GameStatus)
 	const db = getDb();
 
 	const [game] = await db
-		.select({ id: schema.games.id, status: schema.games.status })
+		.select({
+			id: schema.games.id,
+			status: schema.games.status,
+			title: schema.games.title,
+		})
 		.from(schema.games)
 		.where(eq(schema.games.id, gameId));
 	if (!game) throw new Error("Game not found.");
@@ -130,6 +138,12 @@ export async function transitionGameStatus(gameId: string, toStatus: GameStatus)
 
 	if (game.status === "backlog") {
 		await db.delete(schema.votes).where(eq(schema.votes.gameId, gameId));
+	}
+
+	if (toStatus === "completed") {
+		notifyDiscord(`🏆 The group finished **${game.title}**!`);
+	} else if (toStatus === "playing") {
+		notifyDiscord(`▶️ Now playing: **${game.title}**`);
 	}
 
 	revalidatePath("/backlog");

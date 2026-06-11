@@ -1,4 +1,4 @@
-import { hltbProvider } from "./hltb";
+import { fetchHltbTimesByTitle, hltbProvider } from "./hltb";
 import { steamProvider } from "./steam";
 import type { NormalizedGameMetadata } from "./types";
 
@@ -19,33 +19,40 @@ export type FetchMetadataResult = {
 // degradation guarantee: any provider failing just means fewer prefilled
 // fields, never a blocked proposal.
 export async function fetchGameMetadata(params: {
-	steamAppId?: string;
-	hltbId?: string;
+	title: string;
+	steamAppId?: number;
 }): Promise<FetchMetadataResult> {
 	const metadata: NormalizedGameMetadata = {};
 	const sources: string[] = [];
 	const failures: string[] = [];
+	const raw: Record<string, unknown> = {};
 
 	if (params.steamAppId) {
 		try {
-			Object.assign(metadata, await steamProvider.fetchByExternalId(params.steamAppId));
+			const steam = await steamProvider.fetchByExternalId(String(params.steamAppId));
+			raw.steam = steam.raw;
+			Object.assign(metadata, steam, { raw: undefined });
 			sources.push(steamProvider.id);
 		} catch {
 			failures.push(steamProvider.id);
 		}
 	}
 
-	if (params.hltbId) {
-		try {
-			const hltb = await hltbProvider.fetchByExternalId(params.hltbId);
+	// Prefer Steam's canonical title for the HLTB lookup when we have it.
+	const hltbQuery = metadata.title ?? params.title;
+	try {
+		const hltb = await fetchHltbTimesByTitle(hltbQuery);
+		if (hltb) {
 			metadata.hltbMain = hltb.hltbMain;
 			metadata.hltbMainExtra = hltb.hltbMainExtra;
 			metadata.hltbCompletionist = hltb.hltbCompletionist;
+			raw.hltb = hltb.raw;
 			sources.push(hltbProvider.id);
-		} catch {
-			failures.push(hltbProvider.id);
 		}
+	} catch {
+		failures.push(hltbProvider.id);
 	}
 
+	metadata.raw = Object.keys(raw).length > 0 ? raw : undefined;
 	return { metadata, sources, failures };
 }

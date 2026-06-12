@@ -2,7 +2,7 @@
 
 ## Project overview
 
-**stooge-log** is a single-tenant web app for one gaming group: a shared game
+**Next Quest** is a single-tenant web app for one gaming group: a shared game
 backlog with point values, anonymous voting to prioritize what to play next,
 burn-rate tracking, and session scheduling with attendance. One deployment =
 one group; members sign in with Google and are approved by an admin.
@@ -99,8 +99,10 @@ a cron expression in `custom-worker.ts` + `wrangler.jsonc` `triggers.crons`.
    `{gameId, SUM(weight)}` aggregates only. The single exception is loading
    the requesting user's own ballot.
 2. **Points are stored, not derived at read time.** Recompute only on
-   explicit edit of length/difficulty/override, via `src/lib/points.ts`.
-   This keeps historical burn-rate stable when the formula is tuned.
+   explicit edit of length/difficulty/override, or via the admin-only
+   recompute action (proposed/backlog games only) — both through
+   `src/lib/points.ts`. Playing/completed/abandoned points never change,
+   keeping historical burn-rate stable when the formula is tuned.
 3. **All game status changes go through `transitionGameStatus`**
    (`src/server/games.ts`), which appends to `game_status_history`. Never
    update `games.status` directly — history powers burn rate.

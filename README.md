@@ -1,6 +1,6 @@
-# Next Quest
+# NextQuest
 
-**Next Quest** is a web app for one gaming group: a shared backlog where
+**NextQuest** is a web app for one gaming group: a shared backlog where
 games earn points, anonymous voting decides what to play next, a burn-rate
 chart shows whether the group will ever actually finish the pile, and
 sessions get scheduled with availability polls, RSVPs, and attendance.

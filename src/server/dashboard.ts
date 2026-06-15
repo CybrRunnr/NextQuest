@@ -120,9 +120,9 @@ export async function getDashboardData(): Promise<DashboardData> {
 				location: schema.events.location,
 				gameTitle: schema.games.title,
 				yesCount: sql<number>`(
-					select count(*)::int from ${schema.eventAttendance}
-					where ${schema.eventAttendance.eventId} = ${schema.events.id}
-					and ${schema.eventAttendance.rsvp} = 'yes'
+					select count(*)::int from "event_attendance"
+					where "event_attendance"."event_id" = "events"."id"
+					and "event_attendance"."rsvp" = 'yes'
 				)`,
 			})
 			.from(schema.events)
@@ -161,15 +161,15 @@ export async function getDashboardData(): Promise<DashboardData> {
 				id: schema.user.id,
 				name: schema.user.name,
 				proposals: sql<number>`(
-					select count(*)::int from ${schema.games}
-					where ${schema.games.proposedBy} = ${schema.user.id}
+					select count(*)::int from "games"
+					where "games"."proposed_by" = "user"."id"
 				)`,
 				sessionsAttended: sql<number>`(
-					select count(*)::int from ${schema.eventAttendance}
-					join ${schema.events} on ${schema.events.id} = ${schema.eventAttendance.eventId}
-					where ${schema.eventAttendance.userId} = ${schema.user.id}
-					and ${schema.eventAttendance.attended} = true
-					and ${schema.events.status} = 'completed'
+					select count(*)::int from "event_attendance"
+					join "events" on "events"."id" = "event_attendance"."event_id"
+					where "event_attendance"."user_id" = "user"."id"
+					and "event_attendance"."attended" = true
+					and "events"."status" = 'completed'
 				)`,
 			})
 			.from(schema.user)

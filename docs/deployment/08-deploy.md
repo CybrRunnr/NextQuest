@@ -76,7 +76,7 @@ output prints the live address, like:
 
 ```
 Deployed next-quest triggers (…)
-  https://next-quest.mike-pond.workers.dev
+  https://next-quest..<your-subdomain>.workers.dev
   schedule: 0 * * * *
   schedule: 0 6 * * *
 ```

@@ -58,7 +58,7 @@ export function EventCard({
 		<Card>
 			<CardContent className="flex flex-col gap-3">
 				<div className="flex flex-wrap items-center gap-2">
-					<h3 className="text-base font-semibold">{event.title}</h3>
+					<h3 className="font-display text-base font-semibold">{event.title}</h3>
 					{event.status === "cancelled" && <Badge variant="destructive">cancelled</Badge>}
 					{event.status === "completed" && <Badge variant="secondary">completed</Badge>}
 					{needsWrapUp && <Badge variant="outline">needs wrap-up</Badge>}
@@ -91,7 +91,7 @@ export function EventCard({
 					<div className="text-muted-foreground text-xs">
 						{yes.length > 0 && (
 							<p>
-								<span className="text-foreground font-medium">In ({yes.length}):</span>{" "}
+								<span className="text-success font-medium">In ({yes.length}):</span>{" "}
 								{yes.join(", ")}
 							</p>
 						)}

@@ -180,7 +180,7 @@ export default async function EventsPage() {
 	return (
 		<div className="flex flex-col gap-8">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Events</h1>
+				<h1 className="font-display text-3xl font-semibold tracking-tight">Events</h1>
 				<p className="text-muted-foreground mt-1 text-sm">
 					Schedule sessions, RSVP, and keep the attendance receipts.
 				</p>
@@ -214,7 +214,7 @@ export default async function EventsPage() {
 			<section className="flex flex-col gap-3">
 				<h2 className="text-sm font-medium tracking-wide uppercase">
 					Upcoming
-					<span className="text-muted-foreground ml-2 font-normal">{upcoming.length}</span>
+					<span className="stat text-muted-foreground ml-2 font-normal">{upcoming.length}</span>
 				</h2>
 				{upcoming.length === 0 ? (
 					<p className="text-muted-foreground text-sm">Nothing on the calendar.</p>

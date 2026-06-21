@@ -69,7 +69,7 @@ export default async function BacklogPage({
 	return (
 		<div className="flex flex-col gap-8">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Backlog</h1>
+				<h1 className="font-display text-3xl font-semibold tracking-tight">Backlog</h1>
 				<p className="text-muted-foreground mt-1 text-sm">
 					Everything the group plans to play, is playing, or has finished.
 				</p>
@@ -120,7 +120,7 @@ export default async function BacklogPage({
 					<section key={status} className="flex flex-col gap-3">
 						<h2 className="text-sm font-medium tracking-wide uppercase">
 							{heading}
-							<span className="text-muted-foreground ml-2 font-normal">
+							<span className="stat text-muted-foreground ml-2 font-normal">
 								{sectionRows.length}
 							</span>
 						</h2>

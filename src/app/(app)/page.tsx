@@ -20,6 +20,7 @@ import { LocalTime } from "@/components/local-time";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDashboardData, type ActivityItem } from "@/server/dashboard";
+import { cn } from "@/lib/utils";
 
 import { BurnRateChart } from "./burn-rate-chart";
 
@@ -70,11 +71,14 @@ function StatCard({
 	label,
 	value,
 	detail,
+	highlight,
 }: {
 	icon: typeof LibraryIcon;
 	label: string;
 	value: string;
 	detail?: string;
+	/** Nova: the headline metric (Completion) renders its value in the cyan accent. */
+	highlight?: boolean;
 }) {
 	return (
 		<Card className="py-4">
@@ -83,7 +87,7 @@ function StatCard({
 					<Icon className="size-3.5" />
 					{label}
 				</p>
-				<p className="text-2xl font-semibold tabular-nums">{value}</p>
+				<p className={cn("stat text-3xl font-semibold", highlight && "text-primary")}>{value}</p>
 				{detail && <p className="text-muted-foreground text-xs">{detail}</p>}
 			</CardContent>
 		</Card>
@@ -100,7 +104,7 @@ export default async function DashboardPage() {
 	return (
 		<div className="flex flex-col gap-8">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+				<h1 className="font-display text-3xl font-semibold tracking-tight">Dashboard</h1>
 				<p className="text-muted-foreground mt-1 text-sm">
 					{totals.gamesTotal === 0 ? (
 						<>
@@ -122,6 +126,7 @@ export default async function DashboardPage() {
 					label="Completion"
 					value={`${totals.completionPct}%`}
 					detail={`${totals.completedPoints} of ${totals.totalPoints} points`}
+					highlight
 				/>
 				<StatCard
 					icon={CheckCircle2Icon}

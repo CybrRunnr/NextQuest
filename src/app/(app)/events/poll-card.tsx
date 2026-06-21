@@ -43,7 +43,7 @@ export function PollCard({
 		<Card>
 			<CardContent className="flex flex-col gap-3">
 				<div className="flex flex-wrap items-center gap-2">
-					<h3 className="text-base font-semibold">{poll.title}</h3>
+					<h3 className="font-display text-base font-semibold">{poll.title}</h3>
 					{poll.scheduled ? (
 						<Badge className="gap-1">
 							<CalendarCheckIcon className="size-3" />

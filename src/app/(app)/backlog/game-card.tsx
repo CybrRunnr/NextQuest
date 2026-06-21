@@ -69,12 +69,13 @@ export function GameCard({
 				)}
 				<CardContent className="flex flex-1 flex-col gap-3 px-5 py-4">
 					<div className="flex flex-wrap items-center gap-2">
-						<h3 className="text-base font-semibold">{game.title}</h3>
+						<h3 className="font-display text-base font-semibold">{game.title}</h3>
 						<Badge variant={badge.variant}>{badge.label}</Badge>
 						{effectivePoints !== null ? (
 							<Badge className="gap-1">
 								<StarIcon className="size-3" />
-								{effectivePoints} pts{game.pointsOverride !== null && " (override)"}
+								<span className="stat">{effectivePoints}</span> pts
+								{game.pointsOverride !== null && " (override)"}
 							</Badge>
 						) : (
 							<Badge variant="outline">needs scoring</Badge>
@@ -82,7 +83,7 @@ export function GameCard({
 						{voteTotal !== undefined && voteTotal > 0 && (
 							<Badge variant="secondary" className="gap-1">
 								<VoteIcon className="size-3" />
-								{voteTotal} group vote{voteTotal === 1 ? "" : "s"}
+								<span className="stat">{voteTotal}</span> group vote{voteTotal === 1 ? "" : "s"}
 							</Badge>
 						)}
 					</div>
@@ -91,17 +92,19 @@ export function GameCard({
 						{game.lengthHours && (
 							<span className="flex items-center gap-1">
 								<ClockIcon className="size-3" />
-								{Number(game.lengthHours)} h
+								<span className="stat">{Number(game.lengthHours)}</span> h
 							</span>
 						)}
 						{game.difficulty && (
 							<span className="flex items-center gap-1">
 								<GaugeIcon className="size-3" />
-								difficulty {game.difficulty}/5
+								difficulty <span className="stat">{game.difficulty}/5</span>
 							</span>
 						)}
 						{metadata?.steamReviewScore != null && (
-							<span>{metadata.steamReviewScore}% positive on Steam</span>
+							<span className="text-success font-medium">
+								<span className="stat">{metadata.steamReviewScore}%</span> positive on Steam
+							</span>
 						)}
 						{proposerName && <span>proposed by {proposerName}</span>}
 					</div>
